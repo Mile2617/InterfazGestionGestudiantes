@@ -1,6 +1,7 @@
 package com.example.application.views;
 
-
+import com.example.application.controllers.SistemaGestionEstudiantes;
+import com.example.application.models.persona.Estudiante;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -21,6 +22,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
 @PageTitle("Estudiantes")
@@ -29,73 +31,76 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 @Uses(Icon.class)
 public class EstudiantesView extends Composite<VerticalLayout> {
 
-    public EstudiantesView() {
+    private final Grid<Estudiante> stripedGrid = new Grid<>(Estudiante.class, false);
+
+    @Autowired
+    public EstudiantesView(SistemaGestionEstudiantes sistema) {
         VerticalLayout layoutColumn2 = new VerticalLayout();
         FormLayout formLayout3Col = new FormLayout();
-        TextField textField = new TextField();
-        TextField textField2 = new TextField();
-        TextField textField3 = new TextField();
+        TextField nombreField = new TextField("Nombre");
+        TextField apellidoField = new TextField("Apellido");
+        TextField telefonoField = new TextField("Número Telefónico");
         FormLayout formLayout2Col = new FormLayout();
-        TextField textField4 = new TextField();
-        ComboBox comboBox = new ComboBox();
-        Button buttonPrimary = new Button();
-        Grid stripedGrid = new Grid();
+        TextField emailField = new TextField("e-mail");
+        ComboBox<String> nivelComboBox = new ComboBox<>("Nivel de estudio");
+        Button buttonPrimary = new Button("Crear Nuevo estudiante");
+
+        // Set up ComboBox data
+        nivelComboBox.setItems("Pregrado", "Postgrado", "Doctorado");
+
+        // Set up Grid columns
+        stripedGrid.addColumn(Estudiante::getNombre).setHeader("Nombre");
+        stripedGrid.addColumn(Estudiante::getApellido).setHeader("Apellido");
+        stripedGrid.addColumn(Estudiante::getEmail).setHeader("Email");
+        stripedGrid.addColumn(Estudiante::getTelefono).setHeader("Teléfono");
+        stripedGrid.addColumn(Estudiante::getNivelEstudio).setHeader("Nivel de estudio");
+        stripedGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        stripedGrid.setWidth("100%");
+        stripedGrid.getStyle().set("flex-grow", "0");
+        stripedGrid.setItems(sistema.listarEstudiantes());
+
+        // Button action
+        buttonPrimary.addClickListener(e -> {
+            String nombre = nombreField.getValue();
+            String apellido = apellidoField.getValue();
+            String email = emailField.getValue();
+            String telefono = telefonoField.getValue();
+            String nivel = nivelComboBox.getValue();
+            if (!nombre.isEmpty() && !apellido.isEmpty() && !email.isEmpty() && !telefono.isEmpty() && nivel != null) {
+                Estudiante estudiante = new Estudiante(
+                        nombre, apellido, email, telefono, "", "", nivel, ""
+                );
+                sistema.agregarEstudiante(estudiante);
+                stripedGrid.setItems(sistema.listarEstudiantes());
+                // Clear fields
+                nombreField.clear();
+                apellidoField.clear();
+                emailField.clear();
+                telefonoField.clear();
+                nivelComboBox.clear();
+            }
+        });
+
+        // Layout setup
         getContent().setWidth("100%");
         getContent().getStyle().set("flex-grow", "1");
         layoutColumn2.addClassName(Padding.SMALL);
         layoutColumn2.setWidth("100%");
         layoutColumn2.getStyle().set("flex-grow", "1");
         formLayout3Col.setWidth("100%");
-        formLayout3Col.setResponsiveSteps(new ResponsiveStep("0", 1), new ResponsiveStep("250px", 2),
-                new ResponsiveStep("500px", 3));
-        textField.setLabel("Nombre");
-        textField.setWidth("min-content");
-        textField2.setLabel("Apellido");
-        textField2.setWidth("min-content");
-        textField3.setLabel("Número Telefónico");
-        textField3.setWidth("min-content");
+        formLayout3Col.setResponsiveSteps(
+                new ResponsiveStep("0", 1),
+                new ResponsiveStep("250px", 2),
+                new ResponsiveStep("500px", 3)
+        );
+        formLayout3Col.add(nombreField, apellidoField, telefonoField);
         formLayout2Col.setWidth("100%");
-        textField4.setLabel("e-mail");
-        textField4.setWidth("min-content");
-        comboBox.setLabel("Nivel de estudio");
-        comboBox.setWidth("min-content");
-        setComboBoxSampleData(comboBox);
-        buttonPrimary.setText("Crear Nuevo estudiante");
+        formLayout2Col.add(emailField, nivelComboBox);
         layoutColumn2.setAlignSelf(FlexComponent.Alignment.CENTER, buttonPrimary);
         buttonPrimary.setWidth("970px");
         buttonPrimary.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        stripedGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-        stripedGrid.setWidth("100%");
-        stripedGrid.getStyle().set("flex-grow", "0");
-        setGridSampleData(stripedGrid);
+
         getContent().add(layoutColumn2);
-        layoutColumn2.add(formLayout3Col);
-        formLayout3Col.add(textField);
-        formLayout3Col.add(textField2);
-        formLayout3Col.add(textField3);
-        layoutColumn2.add(formLayout2Col);
-        formLayout2Col.add(textField4);
-        formLayout2Col.add(comboBox);
-        layoutColumn2.add(buttonPrimary);
-        layoutColumn2.add(stripedGrid);
+        layoutColumn2.add(formLayout3Col, formLayout2Col, buttonPrimary, stripedGrid);
     }
-
-    record SampleItem(String value, String label, Boolean disabled) {
-    }
-
-    private void setComboBoxSampleData(ComboBox comboBox) {
-        List<SampleItem> sampleItems = new ArrayList<>();
-        sampleItems.add(new SampleItem("first", "First", null));
-        sampleItems.add(new SampleItem("second", "Second", null));
-        sampleItems.add(new SampleItem("third", "Third", Boolean.TRUE));
-        sampleItems.add(new SampleItem("fourth", "Fourth", null));
-        comboBox.setItems(sampleItems);
-        comboBox.setItemLabelGenerator(item -> ((SampleItem) item).label());
-    }
-
-    private void setGridSampleData(Grid grid) {
-       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
-    }
-
-
 }
