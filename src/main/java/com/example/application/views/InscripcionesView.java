@@ -1,107 +1,77 @@
 package com.example.application.views;
 
-
+import com.example.application.controllers.SistemaGestionEstudiantes;
+import com.example.application.models.carrera.Carrera;
+import com.example.application.models.carrera.Materia;
+import com.example.application.models.persona.Estudiante;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.lineawesome.LineAwesomeIconUrl;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.vaadin.lineawesome.LineAwesomeIconUrl;
-
 @PageTitle("Inscripciones")
-@Route("my-view3")
+@Route("inscripciones")
 @Menu(order = 3, icon = LineAwesomeIconUrl.CARET_SQUARE_DOWN_SOLID)
-@Uses(Icon.class)
+@Uses(Button.class)
 public class InscripcionesView extends Composite<VerticalLayout> {
 
-    public InscripcionesView() {
-        VerticalLayout layoutColumn2 = new VerticalLayout();
-        HorizontalLayout layoutRow = new HorizontalLayout();
-        FormLayout formLayout2Col = new FormLayout();
-        ComboBox comboBox = new ComboBox();
-        TextField textField = new TextField();
-        ComboBox comboBox2 = new ComboBox();
-        VerticalLayout layoutColumn3 = new VerticalLayout();
-        H4 h4 = new H4();
-        Grid multiSelectGrid = new Grid();
-        Button buttonPrimary = new Button();
-        getContent().setWidth("100%");
-        getContent().getStyle().set("flex-grow", "1");
-        layoutColumn2.setWidthFull();
-        getContent().setFlexGrow(1.0, layoutColumn2);
-        layoutColumn2.setWidth("100%");
-        layoutColumn2.getStyle().set("flex-grow", "1");
-        layoutRow.setWidthFull();
-        layoutColumn2.setFlexGrow(1.0, layoutRow);
-        layoutRow.addClassName(Gap.MEDIUM);
-        layoutRow.setWidth("100%");
-        layoutRow.getStyle().set("flex-grow", "1");
-        formLayout2Col.setWidth("100%");
-        comboBox.setLabel("Selección de carrera");
-        comboBox.setWidth("min-content");
-        setComboBoxSampleData(comboBox);
-        textField.setLabel("Periodo de inscripción");
-        textField.setWidth("min-content");
-        comboBox2.setLabel("Seleccion de estudiante");
-        comboBox2.setWidth("959px");
-        setComboBoxSampleData(comboBox2);
-        layoutColumn3.setWidthFull();
-        getContent().setFlexGrow(1.0, layoutColumn3);
-        layoutColumn3.setWidth("100%");
-        layoutColumn3.getStyle().set("flex-grow", "1");
-        h4.setText("Asignacion de materias");
-        h4.setWidth("max-content");
-        multiSelectGrid.setSelectionMode(Grid.SelectionMode.MULTI);
-        multiSelectGrid.setWidth("100%");
-        multiSelectGrid.getStyle().set("flex-grow", "0");
-        setGridSampleData(multiSelectGrid);
-        buttonPrimary.setText("Completar proceso de inscripción");
-        layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, buttonPrimary);
-        buttonPrimary.setWidth("959px");
-        buttonPrimary.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getContent().add(layoutColumn2);
-        layoutColumn2.add(layoutRow);
-        layoutRow.add(formLayout2Col);
-        formLayout2Col.add(comboBox);
-        formLayout2Col.add(textField);
-        layoutColumn2.add(comboBox2);
-        getContent().add(layoutColumn3);
-        layoutColumn3.add(h4);
-        layoutColumn3.add(multiSelectGrid);
-        layoutColumn3.add(buttonPrimary);
+    private final Grid<Materia> materiasGrid = new Grid<>(Materia.class, false);
+
+    @Autowired
+    public InscripcionesView(SistemaGestionEstudiantes sistema) {
+        FormLayout form = new FormLayout();
+        ComboBox<Carrera> carreraCombo = new ComboBox<>("Carrera");
+        ComboBox<Estudiante> estudianteCombo = new ComboBox<>("Estudiante");
+        Button inscribirBtn = new Button("Inscribir");
+
+        // Set items and label generators
+        carreraCombo.setItems(sistema.listarCarreras());
+        carreraCombo.setItemLabelGenerator(Carrera::getNombre);
+
+        estudianteCombo.setItems(sistema.listarEstudiantes());
+        estudianteCombo.setItemLabelGenerator(e -> e.getNombre() + " " + e.getApellido());
+
+        // Grid setup
+        materiasGrid.addColumn(Materia::getNombre).setHeader("Materia");
+        materiasGrid.addColumn(Materia::getDocente).setHeader("Docente");
+        materiasGrid.addColumn(Materia::getHoras).setHeader("Horas");
+        materiasGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        materiasGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+
+        // Update materias when a career is selected
+        carreraCombo.addValueChangeListener(event -> {
+            Carrera selected = event.getValue();
+            if (selected != null) {
+                materiasGrid.setItems(selected.getMaterias());
+            } else {
+                materiasGrid.setItems(new ArrayList<>());
+            }
+        });
+
+        // Inscribir button logic (add materias to estudiante)
+        inscribirBtn.addClickListener(e -> {
+            Estudiante estudiante = estudianteCombo.getValue();
+            List<Materia> materiasSeleccionadas = new ArrayList<>(materiasGrid.getSelectedItems());
+            if (estudiante != null && !materiasSeleccionadas.isEmpty()) {
+                estudiante.setMateriasInscritas(materiasSeleccionadas);
+                UI.getCurrent().getPage().reload();
+            }
+        });
+
+        form.add(carreraCombo, estudianteCombo);
+        getContent().add(form, materiasGrid, inscribirBtn);
     }
-
-    record SampleItem(String value, String label, Boolean disabled) {
-    }
-
-    private void setComboBoxSampleData(ComboBox comboBox) {
-        List<SampleItem> sampleItems = new ArrayList<>();
-        sampleItems.add(new SampleItem("first", "First", null));
-        sampleItems.add(new SampleItem("second", "Second", null));
-        sampleItems.add(new SampleItem("third", "Third", Boolean.TRUE));
-        sampleItems.add(new SampleItem("fourth", "Fourth", null));
-        comboBox.setItems(sampleItems);
-        comboBox.setItemLabelGenerator(item -> ((SampleItem) item).label());
-    }
-
-    private void setGridSampleData(Grid grid) {
-       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
-    }
-
-
 }
