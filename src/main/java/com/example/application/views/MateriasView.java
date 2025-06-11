@@ -1,10 +1,12 @@
 package com.example.application.views;
 
 import com.example.application.controllers.SistemaGestionEstudiantes;
+import com.example.application.models.carrera.Carrera;
 import com.example.application.models.carrera.Materia;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
@@ -36,9 +38,14 @@ public class MateriasView extends Composite<VerticalLayout> {
         TextField nombreField = new TextField("Nombre de la materia");
         TextField docenteField = new TextField("Docente de la materia");
         TextField horasField = new TextField("Numero de horas de la materia");
+        ComboBox<Carrera> carreraComboBox = new ComboBox<>("Carrera a la que pertenece");
         VerticalLayout layoutColumn2 = new VerticalLayout();
         Button buttonPrimary = new Button("Crear Materia");
         Button buttonSecondary = new Button("Eliminar Materia");
+
+        // Carrera ComboBox setup
+        carreraComboBox.setItems(sistema.listarCarreras());
+        carreraComboBox.setItemLabelGenerator(Carrera::getNombre);
 
         // Grid columns
         grid.addColumn(Materia::getNombre).setHeader("Nombre");
@@ -55,15 +62,18 @@ public class MateriasView extends Composite<VerticalLayout> {
             String nombre = nombreField.getValue();
             String docente = docenteField.getValue();
             String horasStr = horasField.getValue();
-            if (!nombre.isEmpty() && !docente.isEmpty() && !horasStr.isEmpty()) {
+            Carrera carrera = carreraComboBox.getValue();
+            if (!nombre.isEmpty() && !docente.isEmpty() && !horasStr.isEmpty() && carrera != null) {
                 try {
                     int horas = Integer.parseInt(horasStr);
                     Materia materia = new Materia(nombre, docente, horas);
                     sistema.agregarMateria(materia);
+                    carrera.getMaterias().add(materia);
                     grid.setItems(sistema.listarMaterias());
                     nombreField.clear();
                     docenteField.clear();
                     horasField.clear();
+                    carreraComboBox.clear();
                 } catch (NumberFormatException ex) {
                     horasField.setInvalid(true);
                     horasField.setErrorMessage("Debe ser un número");
@@ -76,6 +86,8 @@ public class MateriasView extends Composite<VerticalLayout> {
             Materia selected = grid.asSingleSelect().getValue();
             if (selected != null) {
                 sistema.listarMaterias().remove(selected);
+                // Remove from all carreras
+                sistema.listarCarreras().forEach(c -> c.getMaterias().remove(selected));
                 grid.setItems(sistema.listarMaterias());
                 grid.asSingleSelect().clear();
             }
@@ -93,7 +105,7 @@ public class MateriasView extends Composite<VerticalLayout> {
                 new ResponsiveStep("250px", 2),
                 new ResponsiveStep("500px", 3)
         );
-        formLayout3Col.add(nombreField, docenteField, horasField);
+        formLayout3Col.add(nombreField, docenteField, horasField, carreraComboBox);
         layoutColumn2.setWidth("100%");
         layoutColumn2.getStyle().set("flex-grow", "1");
 

@@ -46,7 +46,7 @@ public class CarrerasView extends Composite<VerticalLayout> {
         Button buttonSecondary = new Button("Crear Nueva Carrera");
 
         // ComboBox data
-        tipoComboBox.setItems("Técnica", "Tecnológica", "Universitaria");
+        tipoComboBox.setItems("Pregrado", "Postgrado", "Doctorado");
 
         // Grid columns
         grid.addColumn(Carrera::getNombre).setHeader("Nombre");
