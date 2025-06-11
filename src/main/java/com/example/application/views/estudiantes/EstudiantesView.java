@@ -1,7 +1,6 @@
 package com.example.application.views.estudiantes;
 
-import com.example.application.data.SamplePerson;
-import com.example.application.services.SamplePersonService;
+
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -41,7 +40,7 @@ public class EstudiantesView extends Composite<VerticalLayout> {
         TextField textField4 = new TextField();
         ComboBox comboBox = new ComboBox();
         Button buttonPrimary = new Button();
-        Grid stripedGrid = new Grid(SamplePerson.class);
+        Grid stripedGrid = new Grid();
         getContent().setWidth("100%");
         getContent().getStyle().set("flex-grow", "1");
         layoutColumn2.addClassName(Padding.SMALL);
@@ -96,9 +95,8 @@ public class EstudiantesView extends Composite<VerticalLayout> {
     }
 
     private void setGridSampleData(Grid grid) {
-        grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
+       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
     }
 
-    @Autowired()
-    private SamplePersonService samplePersonService;
+
 }

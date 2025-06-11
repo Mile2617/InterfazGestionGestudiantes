@@ -1,7 +1,6 @@
 package com.example.application.views.materias;
 
-import com.example.application.data.SamplePerson;
-import com.example.application.services.SamplePersonService;
+
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -34,7 +33,7 @@ public class MateriasView extends Composite<VerticalLayout> {
         TextField textField2 = new TextField();
         TextField textField3 = new TextField();
         VerticalLayout layoutColumn2 = new VerticalLayout();
-        Grid multiSelectGrid = new Grid(SamplePerson.class);
+        Grid multiSelectGrid = new Grid();
         VerticalLayout layoutColumn3 = new VerticalLayout();
         FormLayout formLayout2Col = new FormLayout();
         Button buttonPrimary = new Button();
@@ -83,9 +82,8 @@ public class MateriasView extends Composite<VerticalLayout> {
     }
 
     private void setGridSampleData(Grid grid) {
-        grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
+       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
     }
 
-    @Autowired()
-    private SamplePersonService samplePersonService;
+
 }

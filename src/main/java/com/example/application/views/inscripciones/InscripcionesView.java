@@ -1,7 +1,6 @@
 package com.example.application.views.inscripciones;
 
-import com.example.application.data.SamplePerson;
-import com.example.application.services.SamplePersonService;
+
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -40,7 +39,7 @@ public class InscripcionesView extends Composite<VerticalLayout> {
         ComboBox comboBox2 = new ComboBox();
         VerticalLayout layoutColumn3 = new VerticalLayout();
         H4 h4 = new H4();
-        Grid multiSelectGrid = new Grid(SamplePerson.class);
+        Grid multiSelectGrid = new Grid();
         Button buttonPrimary = new Button();
         getContent().setWidth("100%");
         getContent().getStyle().set("flex-grow", "1");
@@ -102,9 +101,8 @@ public class InscripcionesView extends Composite<VerticalLayout> {
     }
 
     private void setGridSampleData(Grid grid) {
-        grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
+       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
     }
 
-    @Autowired()
-    private SamplePersonService samplePersonService;
+
 }

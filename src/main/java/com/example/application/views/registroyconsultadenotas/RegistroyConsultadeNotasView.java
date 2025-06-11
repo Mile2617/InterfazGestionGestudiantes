@@ -1,7 +1,6 @@
 package com.example.application.views.registroyconsultadenotas;
 
-import com.example.application.data.SamplePerson;
-import com.example.application.services.SamplePersonService;
+
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -40,7 +39,7 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
         Button buttonPrimary = new Button();
         H4 h4 = new H4();
         VerticalLayout layoutColumn3 = new VerticalLayout();
-        Grid multiSelectGrid = new Grid(SamplePerson.class);
+        Grid multiSelectGrid = new Grid();
         FormLayout formLayout2Col2 = new FormLayout();
         Button buttonPrimary2 = new Button();
         Button buttonSecondary = new Button();
@@ -116,9 +115,8 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
     }
 
     private void setGridSampleData(Grid grid) {
-        grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
+       // grid.setItems(query -> samplePersonService.list(VaadinSpringDataHelpers.toSpringPageRequest(query)).stream());
     }
 
-    @Autowired()
-    private SamplePersonService samplePersonService;
+
 }
