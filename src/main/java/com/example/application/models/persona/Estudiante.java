@@ -1,5 +1,6 @@
 package com.example.application.models.persona;
 
+import com.example.application.models.carrera.Carrera;
 import com.example.application.models.carrera.Materia;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +8,8 @@ import java.util.List;
 public class Estudiante extends Persona {
     private String nivelEstudio, rol;
     private List<Materia> materiasInscritas = new ArrayList<>();
+    private String estado;
+    private Carrera carrera;
 
     public Estudiante(String nombre, String apellido, String email, String telefono,
                       String fechaNacimiento, String ocupacion, String nivelEstudio, String rol) {
@@ -42,5 +45,21 @@ public class Estudiante extends Persona {
 
     public void setMateriasInscritas(List<Materia> materiasInscritas) {
         this.materiasInscritas = materiasInscritas;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public Carrera getCarrera() {
+        return carrera;
+    }
+
+    public void setCarrera(Carrera carrera) {
+        this.carrera = carrera;
     }
 }

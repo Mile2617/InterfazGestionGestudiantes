@@ -12,6 +12,8 @@ import com.vaadin.flow.component.dependency.Uses;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
@@ -21,6 +23,7 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @PageTitle("Inscripciones")
 @Route("inscripciones")
@@ -28,50 +31,90 @@ import java.util.List;
 @Uses(Button.class)
 public class InscripcionesView extends Composite<VerticalLayout> {
 
-    private final Grid<Materia> materiasGrid = new Grid<>(Materia.class, false);
+    private final Grid<Materia> materiasDisponiblesGrid = new Grid<>(Materia.class, false);
+    private final Grid<Materia> materiasInscritasGrid = new Grid<>(Materia.class, false);
 
     @Autowired
     public InscripcionesView(SistemaGestionEstudiantes sistema) {
         FormLayout form = new FormLayout();
         ComboBox<Carrera> carreraCombo = new ComboBox<>("Carrera");
         ComboBox<Estudiante> estudianteCombo = new ComboBox<>("Estudiante");
-        Button inscribirBtn = new Button("Inscribir");
+        Button inscribirBtn = new Button("Inscribir seleccionadas");
 
-        // Set items and label generators
         carreraCombo.setItems(sistema.listarCarreras());
         carreraCombo.setItemLabelGenerator(Carrera::getNombre);
 
         estudianteCombo.setItems(sistema.listarEstudiantes());
         estudianteCombo.setItemLabelGenerator(e -> e.getNombre() + " " + e.getApellido());
 
-        // Grid setup
-        materiasGrid.addColumn(Materia::getNombre).setHeader("Materia");
-        materiasGrid.addColumn(Materia::getDocente).setHeader("Docente");
-        materiasGrid.addColumn(Materia::getHoras).setHeader("Horas");
-        materiasGrid.setSelectionMode(Grid.SelectionMode.MULTI);
-        materiasGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        // Grids setup
+        materiasDisponiblesGrid.addColumn(Materia::getNombre).setHeader("Materia");
+        materiasDisponiblesGrid.addColumn(Materia::getDocente).setHeader("Docente");
+        materiasDisponiblesGrid.addColumn(Materia::getHoras).setHeader("Horas");
+        materiasDisponiblesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        materiasDisponiblesGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
-        // Update materias when a career is selected
-        carreraCombo.addValueChangeListener(event -> {
-            Carrera selected = event.getValue();
-            if (selected != null) {
-                materiasGrid.setItems(selected.getMaterias());
-            } else {
-                materiasGrid.setItems(new ArrayList<>());
-            }
-        });
+        materiasInscritasGrid.addColumn(Materia::getNombre).setHeader("Materia");
+        materiasInscritasGrid.addColumn(Materia::getDocente).setHeader("Docente");
+        materiasInscritasGrid.addColumn(Materia::getHoras).setHeader("Horas");
+        materiasInscritasGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
-        // Inscribir button logic (add materias to estudiante)
+        // Update grids when career or student changes
+        carreraCombo.addValueChangeListener(event -> actualizarGrids(carreraCombo, estudianteCombo));
+        estudianteCombo.addValueChangeListener(event -> actualizarGrids(carreraCombo, estudianteCombo));
+
+        // Inscribir button logic
         inscribirBtn.addClickListener(e -> {
             Estudiante estudiante = estudianteCombo.getValue();
-            List<Materia> materiasSeleccionadas = new ArrayList<>(materiasGrid.getSelectedItems());
-            if (estudiante != null && !materiasSeleccionadas.isEmpty()) {
-                estudiante.setMateriasInscritas(materiasSeleccionadas);
-                UI.getCurrent().getPage().reload();
+            Carrera carrera = carreraCombo.getValue();
+            if (estudiante == null || carrera == null) {
+                Notification.show("Seleccione carrera y estudiante");
+                return;
             }
+            List<Materia> seleccionadas = new ArrayList<>(materiasDisponiblesGrid.getSelectedItems());
+            if (seleccionadas.isEmpty()) {
+                Notification.show("Seleccione al menos una materia");
+                return;
+            }
+            List<Materia> yaInscritas = estudiante.getMateriasInscritas() != null ? estudiante.getMateriasInscritas() : new ArrayList<>();
+            List<Materia> nuevas = seleccionadas.stream()
+                    .filter(m -> !yaInscritas.contains(m))
+                    .collect(Collectors.toList());
+            if (nuevas.isEmpty()) {
+                Notification.show("El estudiante ya está inscrito en las materias seleccionadas");
+                return;
+            }
+            yaInscritas.addAll(nuevas);
+            estudiante.setMateriasInscritas(yaInscritas);
+            Notification.show("Materias inscritas correctamente");
+            actualizarGrids(carreraCombo, estudianteCombo);
         });
 
         form.add(carreraCombo, estudianteCombo);
-        getContent().add(form, materiasGrid, inscribirBtn);
+        HorizontalLayout gridsLayout = new HorizontalLayout();
+        gridsLayout.setWidthFull();
+        materiasDisponiblesGrid.setWidth("50%");
+        materiasInscritasGrid.setWidth("50%");
+        gridsLayout.add(materiasDisponiblesGrid, materiasInscritasGrid);
+
+        getContent().add(form, gridsLayout, inscribirBtn);
+    }
+
+    private void actualizarGrids(ComboBox<Carrera> carreraCombo, ComboBox<Estudiante> estudianteCombo) {
+        Carrera carrera = carreraCombo.getValue();
+        Estudiante estudiante = estudianteCombo.getValue();
+        List<Materia> inscritas = estudiante != null && estudiante.getMateriasInscritas() != null
+                ? estudiante.getMateriasInscritas() : new ArrayList<>();
+        if (carrera != null) {
+            List<Materia> disponibles = carrera.getMaterias() != null
+                    ? carrera.getMaterias().stream()
+                    .filter(m -> !inscritas.contains(m))
+                    .collect(Collectors.toList())
+                    : new ArrayList<>();
+            materiasDisponiblesGrid.setItems(disponibles);
+        } else {
+            materiasDisponiblesGrid.setItems(new ArrayList<>());
+        }
+        materiasInscritasGrid.setItems(inscritas);
     }
 }

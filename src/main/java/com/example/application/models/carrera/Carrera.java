@@ -6,11 +6,18 @@ public class Carrera {
     private String nombre;
     private String tipo;
     private List<Materia> materias;
+    private int duracion; // Duration in semesters or years
 
-    public Carrera(String nombre, String tipo, List<Materia> materias) {
+    public Carrera(String nombre, String tipo, List<Materia> materias, int duracion) {
         this.nombre = nombre;
         this.tipo = tipo;
         this.materias = materias;
+        this.duracion = duracion;
+    }
+
+    // Existing constructor for backward compatibility
+    public Carrera(String nombre, String tipo, List<Materia> materias) {
+        this(nombre, tipo, materias, 0);
     }
 
     public String getNombre() {
@@ -35,5 +42,13 @@ public class Carrera {
 
     public void setMaterias(List<Materia> materias) {
         this.materias = materias;
+    }
+
+    public int getDuracion() {
+        return duracion;
+    }
+
+    public void setDuracion(int duracion) {
+        this.duracion = duracion;
     }
 }

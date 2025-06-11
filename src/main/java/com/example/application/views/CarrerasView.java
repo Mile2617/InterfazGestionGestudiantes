@@ -24,11 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @PageTitle("Carreras")
 @Route("my-view")
-@Menu(order = 2, icon = LineAwesomeIconUrl.USER_GRADUATE_SOLID)
+@Menu(order = 0, icon = LineAwesomeIconUrl.USER_GRADUATE_SOLID)
 @Uses(Icon.class)
 public class CarrerasView extends Composite<VerticalLayout> {
 
@@ -41,6 +40,7 @@ public class CarrerasView extends Composite<VerticalLayout> {
         TextField nombreField = new TextField("Nombre de la Carrera");
         TextField numMateriasField = new TextField("Número de materias");
         ComboBox<String> tipoComboBox = new ComboBox<>("Tipo de Carrera");
+        TextField duracionField = new TextField("Duración (semestres)");
         VerticalLayout layoutColumn2 = new VerticalLayout();
         H4 h4 = new H4("Materias");
         Button buttonSecondary = new Button("Crear Nueva Carrera");
@@ -51,6 +51,9 @@ public class CarrerasView extends Composite<VerticalLayout> {
         // Grid columns
         grid.addColumn(Carrera::getNombre).setHeader("Nombre");
         grid.addColumn(Carrera::getTipo).setHeader("Tipo");
+        grid.addColumn(c -> c.getMaterias() != null ? c.getMaterias().size() : 0)
+                .setHeader("Número de Materias");
+        grid.addColumn(Carrera::getDuracion).setHeader("Duración");
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
         grid.setWidth("100%");
         grid.getStyle().set("flex-grow", "0");
@@ -60,14 +63,25 @@ public class CarrerasView extends Composite<VerticalLayout> {
         buttonSecondary.addClickListener(e -> {
             String nombre = nombreField.getValue();
             String tipo = tipoComboBox.getValue();
-            // For simplicity, materias list is empty
+            String duracionStr = duracionField.getValue();
+            int duracion = 0;
+            try {
+                if (duracionStr != null && !duracionStr.isEmpty()) {
+                    duracion = Integer.parseInt(duracionStr);
+                }
+            } catch (NumberFormatException ex) {
+                duracionField.setInvalid(true);
+                duracionField.setErrorMessage("Debe ser un número");
+                return;
+            }
             if (!nombre.isEmpty() && tipo != null) {
-                Carrera carrera = new Carrera(nombre, tipo, new ArrayList<>());
+                Carrera carrera = new Carrera(nombre, tipo, new ArrayList<>(), duracion);
                 sistema.agregarCarrera(carrera);
                 grid.setItems(sistema.listarCarreras());
                 nombreField.clear();
                 numMateriasField.clear();
                 tipoComboBox.clear();
+                duracionField.clear();
             }
         });
 
@@ -83,7 +97,7 @@ public class CarrerasView extends Composite<VerticalLayout> {
                 new ResponsiveStep("250px", 2),
                 new ResponsiveStep("500px", 3)
         );
-        formLayout3Col.add(nombreField, numMateriasField, tipoComboBox);
+        formLayout3Col.add(nombreField, numMateriasField, tipoComboBox, duracionField);
         layoutColumn2.setWidth("100%");
         layoutColumn2.getStyle().set("flex-grow", "1");
         h4.setWidth("max-content");
