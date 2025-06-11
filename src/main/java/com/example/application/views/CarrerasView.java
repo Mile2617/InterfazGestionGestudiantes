@@ -1,3 +1,4 @@
+// src/main/java/com/example/application/views/CarrerasView.java
 package com.example.application.views;
 
 import com.example.application.controllers.SistemaGestionEstudiantes;
@@ -7,12 +8,14 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.Uses;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -32,6 +35,7 @@ import java.util.ArrayList;
 public class CarrerasView extends Composite<VerticalLayout> {
 
     private final Grid<Carrera> grid = new Grid<>(Carrera.class, false);
+    private Carrera carreraEditando = null;
 
     @Autowired
     public CarrerasView(SistemaGestionEstudiantes sistema) {
@@ -43,9 +47,8 @@ public class CarrerasView extends Composite<VerticalLayout> {
         TextField duracionField = new TextField("Duración (semestres)");
         VerticalLayout layoutColumn2 = new VerticalLayout();
         H4 h4 = new H4("Materias");
-        Button buttonSecondary = new Button("Crear Nueva Carrera");
+        Button buttonSecondary = new Button("Guardar Carrera");
 
-        // ComboBox data
         tipoComboBox.setItems("Pregrado", "Postgrado", "Doctorado");
 
         // Grid columns
@@ -54,6 +57,31 @@ public class CarrerasView extends Composite<VerticalLayout> {
         grid.addColumn(c -> c.getMaterias() != null ? c.getMaterias().size() : 0)
                 .setHeader("Número de Materias");
         grid.addColumn(Carrera::getDuracion).setHeader("Duración");
+        grid.addComponentColumn(carrera -> {
+            Button editBtn = new Button("Editar", e -> {
+                carreraEditando = carrera;
+                nombreField.setValue(carrera.getNombre());
+                tipoComboBox.setValue(carrera.getTipo());
+                duracionField.setValue(String.valueOf(carrera.getDuracion()));
+                numMateriasField.setValue(String.valueOf(carrera.getMaterias() != null ? carrera.getMaterias().size() : 0));
+            });
+            Button deleteBtn = new Button("Eliminar", e -> {
+                Dialog confirmDialog = new Dialog();
+                confirmDialog.add("¿Está seguro de eliminar la carrera?");
+                Button yesBtn = new Button("Sí", ev -> {
+                    sistema.listarCarreras().remove(carrera);
+                    grid.setItems(sistema.listarCarreras());
+                    confirmDialog.close();
+                });
+                Button noBtn = new Button("No", ev -> confirmDialog.close());
+                HorizontalLayout dialogBtns = new HorizontalLayout(yesBtn, noBtn);
+                confirmDialog.add(dialogBtns);
+                confirmDialog.open();
+            });
+            editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
+            return new HorizontalLayout(editBtn, deleteBtn);
+        }).setHeader("Acciones");
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
         grid.setWidth("100%");
         grid.getStyle().set("flex-grow", "0");
@@ -72,17 +100,28 @@ public class CarrerasView extends Composite<VerticalLayout> {
             } catch (NumberFormatException ex) {
                 duracionField.setInvalid(true);
                 duracionField.setErrorMessage("Debe ser un número");
+                Notification.show("Duración debe ser un número");
                 return;
             }
-            if (!nombre.isEmpty() && tipo != null) {
+            // Validations
+            if (nombre.isEmpty() || tipo == null || duracionStr.isEmpty()) {
+                Notification.show("Todos los campos son obligatorios");
+                return;
+            }
+            if (carreraEditando == null) {
                 Carrera carrera = new Carrera(nombre, tipo, new ArrayList<>(), duracion);
                 sistema.agregarCarrera(carrera);
-                grid.setItems(sistema.listarCarreras());
-                nombreField.clear();
-                numMateriasField.clear();
-                tipoComboBox.clear();
-                duracionField.clear();
+            } else {
+                carreraEditando.setNombre(nombre);
+                carreraEditando.setTipo(tipo);
+                carreraEditando.setDuracion(duracion);
+                carreraEditando = null;
             }
+            grid.setItems(sistema.listarCarreras());
+            nombreField.clear();
+            numMateriasField.clear();
+            tipoComboBox.clear();
+            duracionField.clear();
         });
 
         // Layout setup

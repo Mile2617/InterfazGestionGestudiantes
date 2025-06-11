@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.Uses;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.formlayout.FormLayout.ResponsiveStep;
 import com.vaadin.flow.component.grid.Grid;
@@ -37,7 +38,6 @@ import java.util.stream.Collectors;
 public class MateriasView extends Composite<VerticalLayout> {
 
     private final Grid<Materia> grid = new Grid<>(Materia.class, false);
-    private List<Materia> materiasFiltradas = new ArrayList<>();
     private Materia materiaEditando = null;
 
     @Autowired
@@ -51,7 +51,6 @@ public class MateriasView extends Composite<VerticalLayout> {
         VerticalLayout layoutColumn2 = new VerticalLayout();
         Button buttonPrimary = new Button("Guardar Materia");
 
-        // Carrera ComboBox setup
         carreraComboBox.setItems(sistema.listarCarreras());
         carreraComboBox.setItemLabelGenerator(Carrera::getNombre);
 
@@ -78,9 +77,18 @@ public class MateriasView extends Composite<VerticalLayout> {
                 carreraComboBox.setValue(carrera);
             });
             Button deleteBtn = new Button("Eliminar", e -> {
-                sistema.listarMaterias().remove(materia);
-                sistema.listarCarreras().forEach(c -> c.getMaterias().remove(materia));
-                actualizarGrid(sistema);
+                Dialog confirmDialog = new Dialog();
+                confirmDialog.add("¿Está seguro de eliminar la materia?");
+                Button yesBtn = new Button("Sí", ev -> {
+                    sistema.listarMaterias().remove(materia);
+                    sistema.listarCarreras().forEach(c -> c.getMaterias().remove(materia));
+                    actualizarGrid(sistema);
+                    confirmDialog.close();
+                });
+                Button noBtn = new Button("No", ev -> confirmDialog.close());
+                HorizontalLayout dialogBtns = new HorizontalLayout(yesBtn, noBtn);
+                confirmDialog.add(dialogBtns);
+                confirmDialog.open();
             });
             editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
             deleteBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
@@ -164,7 +172,7 @@ public class MateriasView extends Composite<VerticalLayout> {
         List<Materia> materias = sistema.listarMaterias();
         Carrera carrera = filtroCarrera.getValue();
         String docente = filtroDocente.getValue() != null ? filtroDocente.getValue().toLowerCase() : "";
-        materiasFiltradas = materias.stream()
+        List<Materia> materiasFiltradas = materias.stream()
                 .filter(m -> carrera == null || sistema.listarCarreras().stream()
                         .filter(c -> c.equals(carrera))
                         .anyMatch(c -> c.getMaterias() != null && c.getMaterias().contains(m)))
