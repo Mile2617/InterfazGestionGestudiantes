@@ -31,20 +31,25 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
 
     private final Grid<Materia> materiasGrid = new Grid<>(Materia.class, false);
     private final Map<Materia, double[]> notasMateria = new HashMap<>();
-    private Carrera carreraSeleccionada = null;
-    private Estudiante estudianteSeleccionado = null;
 
     @Autowired
     public RegistroyConsultadeNotasView(SistemaGestionEstudiantes sistema) {
         FormLayout form = new FormLayout();
-        ComboBox<String> modoBusquedaCombo = new ComboBox<>("Buscar por");
-        ComboBox<Object> selectorCombo = new ComboBox<>();
+        ComboBox<String> periodoCombo = new ComboBox<>("Periodo");
+        ComboBox<String> tipoCombo = new ComboBox<>("Tipo de estudio");
+        ComboBox<Carrera> carreraCombo = new ComboBox<>("Carrera");
+        ComboBox<Estudiante> estudianteCombo = new ComboBox<>("Estudiante");
+        Button buscarBtn = new Button("Buscar");
 
-        modoBusquedaCombo.setItems("Estudiante", "Carrera");
-        modoBusquedaCombo.setValue("Estudiante");
-        selectorCombo.setLabel("Seleccione");
+        periodoCombo.setItems("2024-1", "2024-2", "2025-1");
+        tipoCombo.setItems("Pregrado", "Postgrado", "Doctorado");
 
-        // Grid columns
+        carreraCombo.setItems(sistema.listarCarreras());
+        carreraCombo.setItemLabelGenerator(Carrera::getNombre);
+
+        estudianteCombo.setItems(sistema.listarEstudiantes());
+        estudianteCombo.setItemLabelGenerator(e -> e.getNombre() + " " + e.getApellido());
+
         materiasGrid.addColumn(Materia::getNombre).setHeader("Materia");
         materiasGrid.addColumn(Materia::getDocente).setHeader("Docente");
         materiasGrid.addColumn(Materia::getHoras).setHeader("Horas");
@@ -102,75 +107,20 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
 
         materiasGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
-        // Search mode logic
-        modoBusquedaCombo.addValueChangeListener(e -> {
-            String modo = modoBusquedaCombo.getValue();
-            selectorCombo.clear();
-            materiasGrid.setItems(new ArrayList<>());
-            estudianteSeleccionado = null;
-            carreraSeleccionada = null;
-
-            if ("Estudiante".equals(modo)) {
-                selectorCombo.setItems(sistema.listarEstudiantes());
-                selectorCombo.setItemLabelGenerator(obj -> {
-                    Estudiante est = (Estudiante) obj;
-                    return est.getNombre() + " " + est.getApellido();
-                });
-                selectorCombo.setLabel("Estudiante");
+        buscarBtn.addClickListener(e -> {
+            Estudiante estudiante = estudianteCombo.getValue();
+            if (estudiante != null) {
+                List<Materia> materias = estudiante.getMateriasInscritas();
+                materiasGrid.setItems(materias != null ? materias : new ArrayList<>());
             } else {
-                selectorCombo.setItems(sistema.listarCarreras());
-                selectorCombo.setItemLabelGenerator(obj -> {
-                    Carrera c = (Carrera) obj;
-                    return c.getNombre();
-                });
-                selectorCombo.setLabel("Carrera");
+                materiasGrid.setItems(new ArrayList<>());
             }
         });
 
-        selectorCombo.addValueChangeListener(e -> {
-            if ("Estudiante".equals(modoBusquedaCombo.getValue())) {
-                estudianteSeleccionado = (Estudiante) selectorCombo.getValue();
-                carreraSeleccionada = null;
-                actualizarGridPorEstudiante();
-            } else {
-                carreraSeleccionada = (Carrera) selectorCombo.getValue();
-                estudianteSeleccionado = null;
-                actualizarGridPorCarrera();
-            }
-        });
-
-        // Initial setup
-        modoBusquedaCombo.setValue("Estudiante");
-        selectorCombo.setItems(sistema.listarEstudiantes());
-        selectorCombo.setItemLabelGenerator(obj -> {
-            Estudiante est = (Estudiante) obj;
-            return est.getNombre() + " " + est.getApellido();
-        });
-        selectorCombo.setLabel("Estudiante");
-
-        form.add(modoBusquedaCombo, selectorCombo);
+        form.add(periodoCombo, tipoCombo, carreraCombo, estudianteCombo, buscarBtn);
         getContent().add(form, new H4("Materias inscritas"), materiasGrid);
     }
 
-    private void actualizarGridPorEstudiante() {
-        if (estudianteSeleccionado == null) {
-            materiasGrid.setItems(new ArrayList<>());
-            return;
-        }
-        List<Materia> materias = estudianteSeleccionado.getMateriasInscritas();
-        materiasGrid.setItems(materias != null ? materias : new ArrayList<>());
-    }
-
-    private void actualizarGridPorCarrera() {
-        if (carreraSeleccionada == null) {
-            materiasGrid.setItems(new ArrayList<>());
-            return;
-        }
-        List<Materia> materias = carreraSeleccionada.getMaterias();
-        materiasGrid.setItems(materias != null ? materias : new ArrayList<>());
-    }
-
-    // Helpers for storing and retrieving grades
     private double getNota(Materia materia, int idx) {
         notasMateria.putIfAbsent(materia, new double[3]);
         return notasMateria.get(materia)[idx];
