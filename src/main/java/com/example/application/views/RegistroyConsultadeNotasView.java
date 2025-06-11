@@ -12,6 +12,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
@@ -31,6 +32,7 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
 
     private final Grid<Materia> materiasGrid = new Grid<>(Materia.class, false);
     private final Map<Materia, double[]> notasMateria = new HashMap<>();
+    private final Span promedioAcumuladoLabel = new Span("Promedio acumulado: 0.00");
 
     @Autowired
     public RegistroyConsultadeNotasView(SistemaGestionEstudiantes sistema) {
@@ -61,7 +63,10 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
             prog1.setMax(10);
             prog1.setStep(0.1);
             prog1.setValue(getNota(materia, 0));
-            prog1.addValueChangeListener(e -> setNota(materia, 0, e.getValue()));
+            prog1.addValueChangeListener(e -> {
+                setNota(materia, 0, e.getValue());
+                actualizarPromedioAcumulado();
+            });
             return prog1;
         }).setHeader("Progreso 1 (25%)");
 
@@ -72,7 +77,10 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
             prog2.setMax(10);
             prog2.setStep(0.1);
             prog2.setValue(getNota(materia, 1));
-            prog2.addValueChangeListener(e -> setNota(materia, 1, e.getValue()));
+            prog2.addValueChangeListener(e -> {
+                setNota(materia, 1, e.getValue());
+                actualizarPromedioAcumulado();
+            });
             return prog2;
         }).setHeader("Progreso 2 (35%)");
 
@@ -83,7 +91,10 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
             prog3.setMax(10);
             prog3.setStep(0.1);
             prog3.setValue(getNota(materia, 2));
-            prog3.addValueChangeListener(e -> setNota(materia, 2, e.getValue()));
+            prog3.addValueChangeListener(e -> {
+                setNota(materia, 2, e.getValue());
+                actualizarPromedioAcumulado();
+            });
             return prog3;
         }).setHeader("Progreso 3 (40%)");
 
@@ -98,6 +109,7 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
                     Notification.show("Notas guardadas. Nota final: " +
                             String.format("%.2f", calcularNotaFinal(materia)));
                     materiasGrid.getDataProvider().refreshItem(materia);
+                    actualizarPromedioAcumulado();
                 } else {
                     Notification.show("Las notas deben ser numéricas entre 0 y 10");
                 }
@@ -112,13 +124,15 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
             if (estudiante != null) {
                 List<Materia> materias = estudiante.getMateriasInscritas();
                 materiasGrid.setItems(materias != null ? materias : new ArrayList<>());
+                actualizarPromedioAcumulado();
             } else {
                 materiasGrid.setItems(new ArrayList<>());
+                promedioAcumuladoLabel.setText("Promedio acumulado: 0.00");
             }
         });
 
         form.add(periodoCombo, tipoCombo, carreraCombo, estudianteCombo, buscarBtn);
-        getContent().add(form, new H4("Materias inscritas"), materiasGrid);
+        getContent().add(form, promedioAcumuladoLabel, new H4("Materias inscritas"), materiasGrid);
     }
 
     private double getNota(Materia materia, int idx) {
@@ -143,5 +157,21 @@ public class RegistroyConsultadeNotasView extends Composite<VerticalLayout> {
     private double calcularNotaFinal(Materia materia) {
         double[] notas = notasMateria.getOrDefault(materia, new double[3]);
         return notas[0] * 0.25 + notas[1] * 0.35 + notas[2] * 0.40;
+    }
+
+    private void actualizarPromedioAcumulado() {
+        List<Materia> materias = new ArrayList<>(notasMateria.keySet());
+        double totalHoras = 0;
+        double sumaPonderada = 0;
+
+        for (Materia materia : materias) {
+            int horas = materia.getHoras();
+            double notaFinal = calcularNotaFinal(materia);
+            sumaPonderada += notaFinal * horas;
+            totalHoras += horas;
+        }
+
+        double promedio = totalHoras > 0 ? sumaPonderada / totalHoras : 0;
+        promedioAcumuladoLabel.setText("Promedio acumulado: " + String.format("%.2f", promedio));
     }
 }
